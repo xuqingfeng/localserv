@@ -12,7 +12,7 @@ func main() {
 
     var (
         port *int = flag.Int(
-            "p", 8888, "port",
+            "p", 8000, "port",
         )
         directory *string = flag.String(
             "d", "./", "directory",
