@@ -21,7 +21,7 @@ func main() {
 
     flag.Parse()
 
-    fmt.Printf("Server running at localhost:%d on %s\n", *port, *directory)
+    fmt.Printf("Server running at 127.0.0.1:%d on %s\n", *port, *directory)
     fmt.Println("Ctrl-C to exit.")
 
     err := http.ListenAndServe(":" + strconv.Itoa(*port), http.FileServer(http.Dir(*directory)))
