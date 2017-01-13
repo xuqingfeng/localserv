@@ -1,32 +1,34 @@
 package main
 
 import (
-    "net/http"
-    "flag"
-    "strconv"
-    "fmt"
-    "os"
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"path/filepath"
+	"strconv"
 )
 
 func main() {
 
-    var (
-        port *int = flag.Int(
-            "p", 8000, "port",
-        )
-        directory *string = flag.String(
-            "d", "./", "directory",
-        )
-    )
+	var (
+		port *int = flag.Int(
+			"p", 8000, "port",
+		)
+		directory *string = flag.String(
+			"d", "./", "directory",
+		)
+	)
 
-    flag.Parse()
+	flag.Parse()
 
-    fmt.Printf("Server running at http://127.0.0.1:%d on %s\n", *port, *directory)
-    fmt.Println("Ctrl-C to exit.")
+	absolutePath, err := filepath.Abs(*directory)
+	if err != nil {
+		absolutePath = *directory
+	}
 
-    err := http.ListenAndServe(":" + strconv.Itoa(*port), http.FileServer(http.Dir(*directory)))
-    if err != nil {
-        fmt.Printf("Error: %v", err)
-        os.Exit(1)
-    }
+	fmt.Printf("Serving %s at http://127.0.0.1:%d\n", absolutePath, *port)
+	fmt.Println("Ctrl-C to exit.")
+
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), http.FileServer(http.Dir(*directory))))
 }
