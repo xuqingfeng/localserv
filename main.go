@@ -12,6 +12,9 @@ import (
 func main() {
 
 	var (
+		host *string = flag.String(
+			"h", "127.0.0.1", "host",
+		)
 		port *int = flag.Int(
 			"p", 8000, "port",
 		)
@@ -27,8 +30,8 @@ func main() {
 		absolutePath = *directory
 	}
 
-	fmt.Printf("Serving %s at http://127.0.0.1:%d\n", absolutePath, *port)
+	fmt.Printf("Serving %s at http://%s:%d\n", absolutePath, *host, *port)
 	fmt.Println("Ctrl-C to exit.")
 
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), http.FileServer(http.Dir(*directory))))
+	log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), http.FileServer(http.Dir(*directory))))
 }
