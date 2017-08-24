@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/gorilla/handlers"
 )
 
 func main() {
@@ -33,5 +36,5 @@ func main() {
 	fmt.Printf("Serving %s at http://%s:%d\n", absolutePath, *host, *port)
 	fmt.Println("Ctrl-C to exit.")
 
-	log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), http.FileServer(http.Dir(*directory))))
+	log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), handlers.LoggingHandler(os.Stdout, http.FileServer(http.Dir(*directory)))))
 }
