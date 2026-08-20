@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -9,40 +11,74 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 )
 
-// run serves the configured directory over HTTP or HTTPS and returns an error
-// if the configuration is invalid or the server fails.
+// run serves the configured directory over HTTP or HTTPS until interrupted,
+// returning an error if the configuration is invalid or the server fails.
 func run(cfg config) error {
 	absolutePath, err := filepath.Abs(cfg.directory)
 	if err != nil {
+		slog.Warn("failed to resolve absolute path", "dir", cfg.directory, "error", err)
 		absolutePath = cfg.directory
 	}
 
 	handler := loggingMiddleware(http.FileServer(http.Dir(cfg.directory)))
 	addr := net.JoinHostPort(cfg.host, strconv.Itoa(cfg.port))
 
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	var certPath, keyPath string
 	switch {
 	case cfg.certFile != "" && cfg.keyFile != "":
-		name, err := certName(filepath.Join(absolutePath, cfg.certFile))
+		// cert and key paths are resolved relative to the served directory
+		certPath = filepath.Join(absolutePath, cfg.certFile)
+		keyPath = filepath.Join(absolutePath, cfg.keyFile)
+		name, err := certName(certPath)
 		if err != nil {
 			return err
 		}
 		if name == "" {
 			name = cfg.host
 		}
+		server.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		fmt.Printf("Serving %s at https://%s\n", absolutePath, net.JoinHostPort(name, strconv.Itoa(cfg.port)))
 		fmt.Println("Ctrl-C to exit.")
-		return http.ListenAndServeTLS(addr, cfg.certFile, cfg.keyFile, handler)
 	case cfg.certFile == "" && cfg.keyFile == "":
 		fmt.Printf("Serving %s at http://%s\n", absolutePath, addr)
 		fmt.Println("Ctrl-C to exit.")
-		return http.ListenAndServe(addr, handler)
 	default:
 		return errors.New("cert and key file must be used together")
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	errCh := make(chan error, 1)
+	go func() {
+		if certPath != "" {
+			errCh <- server.ListenAndServeTLS(certPath, keyPath)
+		} else {
+			errCh <- server.ListenAndServe()
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return server.Shutdown(shutdownCtx)
 	}
 }
 
@@ -88,7 +124,7 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// loggingMiddleware logs each request (method, path, status, duration),
+// loggingMiddleware logs each request (method, path, status, duration)
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

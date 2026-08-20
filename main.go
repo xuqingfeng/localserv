@@ -30,8 +30,8 @@ func parseFlags() config {
 	flag.StringVar(&cfg.host, "host", "127.0.0.1", "host (127.0.0.1 / 0.0.0.0)")
 	flag.IntVar(&cfg.port, "port", 8000, "port")
 	flag.StringVar(&cfg.directory, "dir", "./", "directory")
-	flag.StringVar(&cfg.certFile, "cert", "", "cert file (cert.pem)")
-	flag.StringVar(&cfg.keyFile, "key", "", "key file (key.pem)")
+	flag.StringVar(&cfg.certFile, "cert", "", "cert file, relative to -dir (cert.pem)")
+	flag.StringVar(&cfg.keyFile, "key", "", "key file, relative to -dir (key.pem)")
 	flag.Parse()
 	return cfg
 }
