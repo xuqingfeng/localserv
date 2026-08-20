@@ -1,5 +1,7 @@
 # localserv
 
+[![CI](https://github.com/xuqingfeng/localserv/actions/workflows/ci.yml/badge.svg)](https://github.com/xuqingfeng/localserv/actions/workflows/ci.yml)
+
 A minimal static file server for local development, written in Go. It serves a
 directory over HTTP, or over HTTPS with a certificate and key.
 
