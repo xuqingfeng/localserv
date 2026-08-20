@@ -1,6 +1,6 @@
 module github.com/xuqingfeng/localserv
 
-go 1.18
+go 1.26
 
 require github.com/gorilla/handlers v1.5.1
 
