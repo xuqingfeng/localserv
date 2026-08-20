@@ -55,19 +55,34 @@ func main() {
 		if err != nil {
 			log.Fatalf("E! fail to parse cert: %v", err)
 		}
-		// FIXME
-		fmt.Printf("Serving %s at https://%s:%d\n", absolutePath, cert.DNSNames[0], *port)
+		name := certDisplayName(cert)
+		if name == "" {
+			name = *host
+		}
+		fmt.Printf("Serving %s at https://%s\n", absolutePath, net.JoinHostPort(name, strconv.Itoa(*port)))
 		fmt.Println("Ctrl-C to exit.")
 		// using https
 		log.Fatal(http.ListenAndServeTLS(net.JoinHostPort(*host, strconv.Itoa(*port)), *ca, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else if len(*ca) == 0 && len(*key) == 0 {
-		fmt.Printf("Serving %s at http://%s:%d\n", absolutePath, *host, *port)
+		fmt.Printf("Serving %s at http://%s\n", absolutePath, net.JoinHostPort(*host, strconv.Itoa(*port)))
 		fmt.Println("Ctrl-C to exit.")
 		// using http
 		log.Fatal(http.ListenAndServe(net.JoinHostPort(*host, strconv.Itoa(*port)), loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else {
 		log.Fatal("E! CA and key file must be used together")
 	}
+}
+
+// certDisplayName returns the first DNS name or IP address of the
+// certificate for display, or "" if the certificate has neither.
+func certDisplayName(cert *x509.Certificate) string {
+	if len(cert.DNSNames) > 0 {
+		return cert.DNSNames[0]
+	}
+	if len(cert.IPAddresses) > 0 {
+		return cert.IPAddresses[0].String()
+	}
+	return ""
 }
 
 // statusWriter records the response status code for the request log. The
