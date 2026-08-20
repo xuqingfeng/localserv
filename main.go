@@ -5,9 +5,9 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -43,7 +43,7 @@ func main() {
 
 	if len(*ca) > 0 && len(*key) > 0 {
 		// read DNS name in ca
-		certPem, err := ioutil.ReadFile(filepath.Join(absolutePath, *ca))
+		certPem, err := os.ReadFile(filepath.Join(absolutePath, *ca))
 		if err != nil {
 			log.Fatalf("E! read cert failed: %v", err)
 		}
@@ -59,12 +59,12 @@ func main() {
 		fmt.Printf("Serving %s at https://%s:%d\n", absolutePath, cert.DNSNames[0], *port)
 		fmt.Println("Ctrl-C to exit.")
 		// using https
-		log.Fatal(http.ListenAndServeTLS(*host+":"+strconv.Itoa(*port), *ca, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
+		log.Fatal(http.ListenAndServeTLS(net.JoinHostPort(*host, strconv.Itoa(*port)), *ca, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else if len(*ca) == 0 && len(*key) == 0 {
 		fmt.Printf("Serving %s at http://%s:%d\n", absolutePath, *host, *port)
 		fmt.Println("Ctrl-C to exit.")
 		// using http
-		log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), loggingMiddleware(http.FileServer(http.Dir(*directory)))))
+		log.Fatal(http.ListenAndServe(net.JoinHostPort(*host, strconv.Itoa(*port)), loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else {
 		log.Fatal("E! CA and key file must be used together")
 	}
