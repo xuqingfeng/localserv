@@ -27,8 +27,8 @@ func main() {
 	directory := flag.String(
 		"dir", "./", "directory",
 	)
-	ca := flag.String(
-		"ca", "", "CA file (ca.pem)",
+	certFile := flag.String(
+		"cert", "", "cert file (cert.pem)",
 	)
 	key := flag.String(
 		"key", "", "key file (key.pem)",
@@ -41,9 +41,9 @@ func main() {
 		absolutePath = *directory
 	}
 
-	if len(*ca) > 0 && len(*key) > 0 {
-		// read DNS name in ca
-		certPem, err := os.ReadFile(filepath.Join(absolutePath, *ca))
+	if len(*certFile) > 0 && len(*key) > 0 {
+		// read cert to display its name
+		certPem, err := os.ReadFile(filepath.Join(absolutePath, *certFile))
 		if err != nil {
 			log.Fatalf("E! read cert failed: %v", err)
 		}
@@ -62,14 +62,14 @@ func main() {
 		fmt.Printf("Serving %s at https://%s\n", absolutePath, net.JoinHostPort(name, strconv.Itoa(*port)))
 		fmt.Println("Ctrl-C to exit.")
 		// using https
-		log.Fatal(http.ListenAndServeTLS(net.JoinHostPort(*host, strconv.Itoa(*port)), *ca, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
-	} else if len(*ca) == 0 && len(*key) == 0 {
+		log.Fatal(http.ListenAndServeTLS(net.JoinHostPort(*host, strconv.Itoa(*port)), *certFile, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
+	} else if len(*certFile) == 0 && len(*key) == 0 {
 		fmt.Printf("Serving %s at http://%s\n", absolutePath, net.JoinHostPort(*host, strconv.Itoa(*port)))
 		fmt.Println("Ctrl-C to exit.")
 		// using http
 		log.Fatal(http.ListenAndServe(net.JoinHostPort(*host, strconv.Itoa(*port)), loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else {
-		log.Fatal("E! CA and key file must be used together")
+		log.Fatal("E! cert and key file must be used together")
 	}
 }
 

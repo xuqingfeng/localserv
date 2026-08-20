@@ -1,7 +1,7 @@
 ```
 Usage of localserv:
-  -ca string
-    	CA file (ca.pem)
+  -cert string
+    	cert file (cert.pem)
   -dir string
     	directory (default "./")
   -host string
