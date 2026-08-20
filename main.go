@@ -7,15 +7,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"github.com/gorilla/handlers"
+	"time"
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 
 	host := flag.String(
 		"host", "127.0.0.1", "host (127.0.0.1 / 0.0.0.0)",
@@ -58,13 +59,41 @@ func main() {
 		fmt.Printf("Serving %s at https://%s:%d\n", absolutePath, cert.DNSNames[0], *port)
 		fmt.Println("Ctrl-C to exit.")
 		// using https
-		log.Fatal(http.ListenAndServeTLS(*host+":"+strconv.Itoa(*port), *ca, *key, handlers.LoggingHandler(os.Stdout, http.FileServer(http.Dir(*directory)))))
+		log.Fatal(http.ListenAndServeTLS(*host+":"+strconv.Itoa(*port), *ca, *key, loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else if len(*ca) == 0 && len(*key) == 0 {
 		fmt.Printf("Serving %s at http://%s:%d\n", absolutePath, *host, *port)
 		fmt.Println("Ctrl-C to exit.")
 		// using http
-		log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), handlers.LoggingHandler(os.Stdout, http.FileServer(http.Dir(*directory)))))
+		log.Fatal(http.ListenAndServe(*host+":"+strconv.Itoa(*port), loggingMiddleware(http.FileServer(http.Dir(*directory)))))
 	} else {
 		log.Fatal("E! CA and key file must be used together")
 	}
+}
+
+// statusWriter records the response status code for the request log. The
+// default is 200 because a handler may respond without calling WriteHeader.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+// loggingMiddleware logs each request (method, path, status, duration),
+// replacing the gorilla/handlers LoggingHandler.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(sw, r)
+		slog.Info("request",
+			"method", r.Method,
+			"path", r.URL.RequestURI(),
+			"status", sw.status,
+			"duration", time.Since(start),
+		)
+	})
 }
