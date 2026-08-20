@@ -21,6 +21,10 @@ import (
 // run serves the configured directory over HTTP or HTTPS until interrupted,
 // returning an error if the configuration is invalid or the server fails.
 func run(cfg config) error {
+	if err := validateConfig(cfg); err != nil {
+		return err
+	}
+
 	absolutePath, err := filepath.Abs(cfg.directory)
 	if err != nil {
 		slog.Warn("failed to resolve absolute path", "dir", cfg.directory, "error", err)
@@ -38,8 +42,7 @@ func run(cfg config) error {
 	}
 
 	var certPath, keyPath string
-	switch {
-	case cfg.certFile != "" && cfg.keyFile != "":
+	if cfg.certFile != "" {
 		// cert and key paths are resolved relative to the served directory
 		certPath = filepath.Join(absolutePath, cfg.certFile)
 		keyPath = filepath.Join(absolutePath, cfg.keyFile)
@@ -52,13 +55,10 @@ func run(cfg config) error {
 		}
 		server.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		fmt.Printf("Serving %s at https://%s\n", absolutePath, net.JoinHostPort(name, strconv.Itoa(cfg.port)))
-		fmt.Println("Ctrl-C to exit.")
-	case cfg.certFile == "" && cfg.keyFile == "":
+	} else {
 		fmt.Printf("Serving %s at http://%s\n", absolutePath, addr)
-		fmt.Println("Ctrl-C to exit.")
-	default:
-		return errors.New("cert and key file must be used together")
 	}
+	fmt.Println("Ctrl-C to exit.")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -80,6 +80,15 @@ func run(cfg config) error {
 		defer cancel()
 		return server.Shutdown(shutdownCtx)
 	}
+}
+
+// validateConfig checks that the certificate and key flags are either
+// both set or both empty.
+func validateConfig(cfg config) error {
+	if (cfg.certFile == "") != (cfg.keyFile == "") {
+		return errors.New("cert and key file must be used together")
+	}
+	return nil
 }
 
 // certName reads and parses the certificate at path and returns its first
