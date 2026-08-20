@@ -41,12 +41,11 @@ func run(cfg config) error {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	var certPath, keyPath string
+	var useTLS bool
 	if cfg.certFile != "" {
-		// cert and key paths are resolved relative to the served directory
-		certPath = filepath.Join(absolutePath, cfg.certFile)
-		keyPath = filepath.Join(absolutePath, cfg.keyFile)
-		name, err := certName(certPath)
+		// cert and key paths are resolved relative to the working directory,
+		// not the served directory
+		name, err := certName(cfg.certFile)
 		if err != nil {
 			return err
 		}
@@ -55,6 +54,7 @@ func run(cfg config) error {
 		}
 		server.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		fmt.Printf("Serving %s at https://%s\n", absolutePath, net.JoinHostPort(name, strconv.Itoa(cfg.port)))
+		useTLS = true
 	} else {
 		fmt.Printf("Serving %s at http://%s\n", absolutePath, addr)
 	}
@@ -65,8 +65,8 @@ func run(cfg config) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		if certPath != "" {
-			errCh <- server.ListenAndServeTLS(certPath, keyPath)
+		if useTLS {
+			errCh <- server.ListenAndServeTLS(cfg.certFile, cfg.keyFile)
 		} else {
 			errCh <- server.ListenAndServe()
 		}

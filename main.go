@@ -31,8 +31,8 @@ func parseFlags(args []string) config {
 	fs.StringVar(&cfg.host, "host", "127.0.0.1", "host (127.0.0.1 / 0.0.0.0)")
 	fs.IntVar(&cfg.port, "port", 8000, "port")
 	fs.StringVar(&cfg.directory, "dir", "./", "directory")
-	fs.StringVar(&cfg.certFile, "cert", "", "cert file, relative to -dir (cert.pem)")
-	fs.StringVar(&cfg.keyFile, "key", "", "key file, relative to -dir (key.pem)")
+	fs.StringVar(&cfg.certFile, "cert", "", "cert file (cert.pem)")
+	fs.StringVar(&cfg.keyFile, "key", "", "key file (key.pem)")
 	fs.Parse(args)
 	return cfg
 }

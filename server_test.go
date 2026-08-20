@@ -306,14 +306,16 @@ func TestRunServesAndShutsDown(t *testing.T) {
 }
 
 func TestRunTLS(t *testing.T) {
+	// keep the cert outside the served directory, as the README recommends
+	certDir := t.TempDir()
+	certPath, keyPath := writeTestCert(t, certDir, []string{"localhost"}, nil)
 	dir := t.TempDir()
-	writeTestCert(t, dir, []string{"localhost"}, nil)
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("secure"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	port := freePort(t)
-	cfg := config{host: "127.0.0.1", port: port, directory: dir, certFile: "cert.pem", keyFile: "key.pem"}
+	cfg := config{host: "127.0.0.1", port: port, directory: dir, certFile: certPath, keyFile: keyPath}
 	done := make(chan error, 1)
 	go func() { done <- run(cfg) }()
 

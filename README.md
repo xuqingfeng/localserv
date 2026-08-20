@@ -8,13 +8,13 @@ directory over HTTP, or over HTTPS with a certificate and key.
 ```
 Usage of localserv:
   -cert string
-    	cert file, relative to -dir (cert.pem)
+    	cert file (cert.pem)
   -dir string
     	directory (default "./")
   -host string
     	host (127.0.0.1 / 0.0.0.0) (default "127.0.0.1")
   -key string
-    	key file, relative to -dir (key.pem)
+    	key file (key.pem)
   -port int
     	port (default 8000)
 ```
@@ -36,4 +36,5 @@ localserv -dir . -cert cert.pem -key key.pem -port 8443
 ```
 
 The startup banner shows the certificate's first DNS name or IP address. Cert
-and key paths are resolved relative to `-dir`. HTTPS requires TLS 1.2 or newer.
+and key paths are resolved relative to the current working directory, so keep
+them outside the served directory. HTTPS requires TLS 1.2 or newer.
