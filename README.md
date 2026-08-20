@@ -5,6 +5,29 @@
 A minimal static file server for local development, written in Go. It serves a
 directory over HTTP, or over HTTPS with a certificate and key.
 
+## Install
+
+### From source (requires Go 1.26+)
+
+```
+go install github.com/xuqingfeng/localserv@latest
+```
+
+Make sure `$(go env GOPATH)/bin` is in your `PATH`.
+
+### From GitHub Releases
+
+Download the binary for your platform from the
+[latest release](https://github.com/xuqingfeng/localserv/releases/latest). For
+example, on macOS (Apple Silicon):
+
+```
+curl -sSL -o localserv \
+  https://github.com/xuqingfeng/localserv/releases/latest/download/localserv_darwin_arm64
+chmod +x localserv
+sudo mv localserv /usr/local/bin/
+```
+
 ## Usage
 
 ```
@@ -36,7 +59,3 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -node
   -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 localserv -dir . -cert cert.pem -key key.pem -port 8443
 ```
-
-The startup banner shows the certificate's first DNS name or IP address. Cert
-and key paths are resolved relative to the current working directory, so keep
-them outside the served directory. HTTPS requires TLS 1.2 or newer.
